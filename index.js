@@ -1,8 +1,9 @@
 const express = require("express");
 const app = express();
 const jwt = require("jsonwebtoken");
-const { UserModel } = require("./schema");
+const { UserModel, OrgModel, BoardModel } = require("./schema");
 const bcrypt = require("bcrypt");
+const { authMiddleware } = require("./middleware");
 require("dotenv").config();
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -73,4 +74,121 @@ app.post("/signin", async (req, res) => {
   }
 });
 
-app.listen(8000);
+aapp.post("/orgs", authMiddleware, async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const admin = req.userId;
+
+    const newOrg = await OrgModel.create({
+      title,
+      description,
+      admin,
+      members: [admin],
+    });
+
+    res.status(201).json({
+      message: "Org created",
+      orgId: newOrg._id,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
+
+app.post("/members", authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId;
+    const username = req.body.username;
+    const requesterId = req.userId;
+
+    const user = await UserModel.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    const org = await OrgModel.findById(orgId);
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization not found",
+      });
+    }
+
+    // only admin can add members
+    if (org.admin.toString() !== requesterId) {
+      return res.status(403).json({
+        error: "Only admin can add members",
+      });
+    }
+
+    // avoid duplicate members
+    const alreadyMember = org.members.includes(user._id);
+    if (alreadyMember) {
+      return res.status(400).json({
+        error: "User is already a member",
+      });
+    }
+
+    org.members.push(user._id);
+    await org.save();
+
+    res.status(200).json({
+      message: "Member added successfully",
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
+
+app.post("/boards", authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId;
+    const title = req.body.title;
+    const requesterId = req.userId;
+
+    const org = await OrgModel.findById(orgId);
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization not found",
+      });
+    }
+
+    // const members = org.members.map((member) => member.toString());
+    // const isMember = members.includes(requesterId);
+    const isMember = org.members.some( //checks if atleast one element satisfy the condition
+    member => member.toString() === requesterId
+);
+
+    if (!isMember) {
+      return res.status(403).json({
+        error: "Access Denied",
+      });
+    }
+
+    const newBoard = await BoardModel.create({
+      title,
+      orgId,
+    });
+
+    res.json(201).json({
+      message: "New Board Added to Organisation",
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
+
+
+
+
+
+app.listen(8000, ()=>{
+    console.log(`Server listening at port 8000`);
+});

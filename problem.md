@@ -30,11 +30,11 @@ issue {
 
 # Routes!
 
-/signin post
-/signup post
+/signin post (done)
+/signup post (done)
 
-/create org post
-/add member to org post
+/create org post (done)
+/add member to org post(done)
 
 /create board post
 /create issue post

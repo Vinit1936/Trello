@@ -24,7 +24,33 @@ boards{
 issue {
     id
     title
+    status [inqueue, inprogress, done]
     boardId
 }
 
 # Routes!
+
+/signin post
+/signup post
+
+/create org post
+/add member to org post
+
+/create board post
+/create issue post
+
+# get
+
+/boards?=orgId
+/issues?=boardId
+/members?= orgId
+
+# put
+
+/issues?issue id to move the status of issue
+
+
+# delete
+
+/issues? = id
+/members

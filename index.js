@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const jwt = require("jsonwebtoken");
-const { UserModel, OrgModel, BoardModel } = require("./schema");
+const { UserModel, OrgModel, BoardModel, IssueModel } = require("./schema");
 const bcrypt = require("bcrypt");
 const { authMiddleware } = require("./middleware");
 require("dotenv").config();
@@ -270,6 +270,50 @@ app.get("/board", authMiddleware, async (req, res) => {
     });
   }
 });
+
+app.get('/issues', authMiddleware, async (req, res) => {
+  try {
+    const boardId = req.query.boardId;
+    const requesterId = req.userId;
+
+    const board = await BoardModel.findById(boardId);
+
+    if (!board) {
+      return res.status(404).json({
+        error: "Board not found",
+      });
+    }
+
+    const org = await OrgModel.findById(board.orgId);
+
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist",
+      });
+    }
+
+    const isValidUser = org.members.some(
+      member => member.toString() === requesterId
+    );
+
+    if (!isValidUser) {
+      return res.status(403).json({
+        error: "Access Denied",
+      });
+    }
+
+    const issues = await IssueModel.find({ board: boardId });
+
+    res.status(200).json({
+      issues
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
+
 
 
 

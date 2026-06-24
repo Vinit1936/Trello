@@ -344,7 +344,65 @@ app.get('/members', authMiddleware, async (req, res) => {
   }
 });
 
+//Update Route (PUT)
 
+app.put('/issues', authMiddleware, async (req, res) => {
+  try {
+    const issueId = req.query.issueId;
+    const newStatus = req.body.newStatus;
+    const requesterId = req.userId;
+
+    const allowedStatuses = ["Inqueue", "Inprogress", "Done"];
+    if (!allowedStatuses.includes(newStatus)) {
+      return res.status(400).json({
+        error: "Invalid status"
+      });
+    }
+
+    const issue = await IssueModel.findById(issueId);
+    if (!issue) {
+      return res.status(404).json({
+        error: "Issue not found"
+      });
+    }
+
+    const board = await BoardModel.findById(issue.board);
+    if (!board) {
+      return res.status(404).json({
+        error: "Board not found"
+      });
+    }
+
+    const org = await OrgModel.findById(board.orgId);
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist"
+      });
+    }
+
+    const isValidUser = org.members.some(
+      member => member.toString() === requesterId
+    );
+
+    if (!isValidUser) {
+      return res.status(403).json({
+        error: "Access Denied"
+      });
+    }
+
+    issue.status = newStatus;
+    await issue.save();
+
+    res.status(200).json({
+      message: "Issue status updated successfully",
+      issue
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
 
 app.listen(8000, () => {
   console.log(`Server listening at port 8000`);

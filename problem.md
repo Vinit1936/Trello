@@ -43,7 +43,7 @@ issue {
 
 /boards?=orgId (done)
 /issues?=boardId (done)
-/members?= orgId
+/members?= orgId (done)
 
 # put
 

@@ -5,14 +5,43 @@ const { UserModel, OrgModel, BoardModel, IssueModel } = require("./schema");
 const bcrypt = require("bcrypt");
 const { authMiddleware } = require("./middleware");
 require("dotenv").config();
+const z = require("./zod");
 
 const jwtSecret = process.env.JWT_SECRET;
 
 app.use(express.json());
 
+// Zod validation schemas
+const signupSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters long"),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
+});
+
+const signinSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
+
+const orgSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+});
+
+const issueSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  status: z.enum(["Inqueue", "Inprogress", "Done"]),
+});
+
 // Auth Routes
 app.post("/signup", async (req, res) => {
   try {
+    const validation = signupSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: validation.error,
+      });
+    }
     const { username, password } = req.body;
 
     const userExist = await UserModel.findOne({ username });
@@ -43,6 +72,12 @@ app.post("/signup", async (req, res) => {
 
 app.post("/signin", async (req, res) => {
   try {
+    const validation = signinSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: validation.error,
+      });
+    }
     const { username, password } = req.body;
 
     const user = await UserModel.findOne({ username });
@@ -75,8 +110,14 @@ app.post("/signin", async (req, res) => {
 });
 
 //Post Routes
-aapp.post("/orgs", authMiddleware, async (req, res) => {
+app.post("/orgs", authMiddleware, async (req, res) => {
   try {
+    const validation = orgSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: validation.error,
+      });
+    }
     const { title, description } = req.body;
     const admin = req.userId;
 
@@ -189,6 +230,12 @@ app.post("/boards", authMiddleware, async (req, res) => {
 
 app.post("/issues", authMiddleware, async (req, res) => {
   try {
+    const validation = issueSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: validation.error,
+      });
+    }
     const boardId = req.query.boardId;
     const { title, description, status } = req.body;
     const requesterId = req.userId;

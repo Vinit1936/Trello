@@ -459,6 +459,55 @@ app.delete('/issues', authMiddleware, async (req, res) => {
   }
 });
 
+app.delete('/members', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId;
+    const username = req.query.username;
+    const requesterId = req.userId;
+
+    const org = await OrgModel.findById(orgId);
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist"
+      });
+    }
+
+    const isAdmin = org.admin.toString() === requesterId;
+    if (!isAdmin) {
+      return res.status(403).json({
+        error: "Only admin can remove members"
+      });
+    }
+
+    const user = await UserModel.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found"
+      });
+    }
+
+    if (user._id.toString() === org.admin.toString()) {
+      return res.status(400).json({
+        error: "Admin cannot be removed from organization"
+      });
+    }
+
+    org.members = org.members.filter(
+      member => member.toString() !== user._id.toString()
+    );
+
+    await org.save();
+
+    res.status(200).json({
+      message: "Member removed successfully"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
+
 
 app.listen(8000, () => {
   console.log(`Server listening at port 8000`);

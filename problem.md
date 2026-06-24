@@ -47,7 +47,7 @@ issue {
 
 # put
 
-/issues?issue id to move the status of issue
+/issues?issue id to move the status of issue (done)
 
 
 # delete

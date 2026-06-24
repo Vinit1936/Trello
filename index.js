@@ -404,6 +404,62 @@ app.put('/issues', authMiddleware, async (req, res) => {
   }
 });
 
+//Delete routes
+app.delete('/issues', authMiddleware, async (req, res) => {
+  try {
+    const issueId = req.query.issueId;
+    const requesterId = req.userId;
+
+    const issue = await IssueModel.findById(issueId);
+    if (!issue) {
+      return res.status(404).json({
+        error: "Issue not found"
+      });
+    }
+
+    if (issue.status !== "Done") {
+      return res.status(400).json({
+        error: "Only completed issues can be deleted"
+      });
+    }
+
+    const board = await BoardModel.findById(issue.board);
+    if (!board) {
+      return res.status(404).json({
+        error: "Board not found"
+      });
+    }
+
+    const org = await OrgModel.findById(board.orgId);
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist"
+      });
+    }
+
+    const isValidUser = org.members.some(
+      member => member.toString() === requesterId
+    );
+
+    if (!isValidUser) {
+      return res.status(403).json({
+        error: "Access Denied"
+      });
+    }
+
+    await IssueModel.deleteOne({ _id: issueId });
+
+    res.status(200).json({
+      message: "Issue deleted successfully"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
+
+
 app.listen(8000, () => {
   console.log(`Server listening at port 8000`);
 });

@@ -74,6 +74,8 @@ app.post("/signin", async (req, res) => {
   }
 });
 
+
+//Post Routes
 aapp.post("/orgs", authMiddleware, async (req, res) => {
   try {
     const { title, description } = req.body;
@@ -160,9 +162,10 @@ app.post("/boards", authMiddleware, async (req, res) => {
 
     // const members = org.members.map((member) => member.toString());
     // const isMember = members.includes(requesterId);
-    const isMember = org.members.some( //checks if atleast one element satisfy the condition
-    member => member.toString() === requesterId
-);
+    const isMember = org.members.some(
+      //checks if atleast one element satisfy the condition
+      (member) => member.toString() === requesterId,
+    );
 
     if (!isMember) {
       return res.status(403).json({
@@ -185,10 +188,57 @@ app.post("/boards", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/issues", authMiddleware, async (req, res) => {
+  try {
+    const boardId = req.query.boardId;
+    const { title, description, status } = req.body;
+    const requesterId = req.userId;
+
+    const board = await BoardModel.findById(boardId); //_id : boardId
+    if (!board) {
+      return res.status(404).json({
+        error: "Board not found",
+      });
+    }
+
+    const org = await OrgModel.findById(board.orgId); // _id : board.orgId
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist",
+      });
+    }
+
+    const isValidUser = org.members.some(
+      member => member.toString() === requesterId
+    );
+
+    if (!isValidUser) {
+      return res.status(403).json({
+        error: "Access Denied",
+      });
+    }
+
+    const newIssue = await IssueModel.create({
+      title,
+      description,
+      status,
+      board: boardId,
+    });
+
+    res.status(201).json({
+      message: "New issue added successfully",
+      issueId: newIssue._id
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
 
 
+//Get routes
 
-
-app.listen(8000, ()=>{
-    console.log(`Server listening at port 8000`);
+app.listen(8000, () => {
+  console.log(`Server listening at port 8000`);
 });

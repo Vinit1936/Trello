@@ -36,8 +36,8 @@ issue {
 /create org post (done)
 /add member to org post(done)
 
-/create board post
-/create issue post
+/create board post (done)
+/create issue post (done)
 
 # get
 

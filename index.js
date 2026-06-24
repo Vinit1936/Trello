@@ -314,6 +314,35 @@ app.get('/issues', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/members', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId;
+    const requesterId = req.userId;
+
+    const org = await OrgModel.findById(orgId);
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist",
+      });
+    }
+
+    const isAdmin = org.admin.toString() === requesterId;
+
+    if (!isAdmin) {
+      return res.status(403).json({
+        error: "Access Denied",
+      });
+    }
+
+    res.status(200).json({
+      members: org.members
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error"
+    });
+  }
+});
 
 
 

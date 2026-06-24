@@ -52,5 +52,6 @@ issue {
 
 # delete
 
-/issues? = id
+/issues? = id once the issue reach the done section there shoud be button below which will delete the issue
+
 /members

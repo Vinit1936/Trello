@@ -74,7 +74,6 @@ app.post("/signin", async (req, res) => {
   }
 });
 
-
 //Post Routes
 aapp.post("/orgs", authMiddleware, async (req, res) => {
   try {
@@ -209,7 +208,7 @@ app.post("/issues", authMiddleware, async (req, res) => {
     }
 
     const isValidUser = org.members.some(
-      member => member.toString() === requesterId
+      (member) => member.toString() === requesterId,
     );
 
     if (!isValidUser) {
@@ -227,7 +226,43 @@ app.post("/issues", authMiddleware, async (req, res) => {
 
     res.status(201).json({
       message: "New issue added successfully",
-      issueId: newIssue._id
+      issueId: newIssue._id,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
+
+//Get routes
+app.get("/board", authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.query.orgId;
+    const requesterId = req.userId;
+
+    const org = await OrgModel.findById(orgId);
+
+    if (!org) {
+      return res.status(404).json({
+        error: "Organization doesn't exist",
+      });
+    }
+
+    const isValidUser = org.members.some(
+      member => member.toString() === requesterId
+    );
+
+    if (!isValidUser) {
+      return res.status(403).json({
+        error: "Access Denied",
+      });
+    }
+
+    const boards = await BoardModel.find({ orgId });
+
+    res.status(200).json({
+      boards
     });
   } catch (err) {
     res.status(500).json({
@@ -237,7 +272,6 @@ app.post("/issues", authMiddleware, async (req, res) => {
 });
 
 
-//Get routes
 
 app.listen(8000, () => {
   console.log(`Server listening at port 8000`);

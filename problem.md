@@ -41,8 +41,8 @@ issue {
 
 # get
 
-/boards?=orgId
-/issues?=boardId
+/boards?=orgId (done)
+/issues?=boardId 
 /members?= orgId
 
 # put
